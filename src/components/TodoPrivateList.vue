@@ -38,6 +38,16 @@ export const GET_MY_TODOS = gql`
   }
 `;
 
+const CLEAR_COMPLETED_TODOS = gql`
+  mutation clearCompleted {
+    delete_todos(
+      where: { is_completed: { _eq: true }, is_public: { _eq: false } }
+    ) {
+      affected_rows
+    }
+  }
+`;
+
 export default {
   components: {
     TodoItem,
@@ -94,7 +104,28 @@ export default {
     clearCompleted: function() {
       const isOk = window.confirm("Are you sure?");
       if (isOk) {
-        // Remove all the todos that are completed
+        this.$apollo
+          .mutate({
+            mutation: CLEAR_COMPLETED_TODOS,
+            update: (cache, { data: { delete_todos } }) => {
+              if (delete_todos.affected_rows) {
+                const data = cache.readQuery({
+                  query: GET_MY_TODOS
+                });
+
+                data.todos = data.todos.filter(
+                  todo => todo.is_completed !== true
+                );
+                cache.writeQuery({
+                  query: GET_MY_TODOS,
+                  data
+                });
+              }
+            }
+          })
+          .catch(error => {
+            console.error(error);
+          });
       }
     }
   }
