@@ -1,14 +1,11 @@
 <template>
   <div>
     <div class="todoListwrapper">
-      <TodoItem 
-        v-bind:todos="filteredTodos" 
-        v-bind:type="type" 
-      />
+      <TodoItem v-bind:todos="filteredTodos" v-bind:type="type" />
     </div>
-    <TodoFilters 
-      v-bind:remainingTodos="remainingTodos" 
-      v-bind:filterResults="filterResults" 
+    <TodoFilters
+      v-bind:remainingTodos="remainingTodos"
+      v-bind:filterResults="filterResults"
       v-bind:filterType="filterType"
       v-bind:type="type"
       v-bind:clearCompleted="clearCompleted"
@@ -19,50 +16,67 @@
 <script>
 import TodoItem from "../components/TodoItem";
 import TodoFilters from "../components/TodoFilters";
+import gql from "graphql-tag";
+
+// get all todos
+const GET_MY_TODOS = gql`
+  query getMyTodos {
+    todos(
+      where: { is_public: { _eq: false } }
+      order_by: { created_at: desc }
+    ) {
+      id
+      title
+      created_at
+      is_completed
+    }
+  }
+`;
+
 export default {
   components: {
-    TodoItem, TodoFilters
+    TodoItem,
+    TodoFilters
   },
+  
+  // in this apollo object way. 
+  // data will be available when component is mounted
+  apollo: {
+    todos: {
+      query: GET_MY_TODOS
+    }
+  },
+
   data() {
     return {
       type: "private",
       filterType: "all",
-      todos: [
-        {
-          id: "1",
-          title: "This is private todo 1",
-          is_completed: true,
-          is_public: false
-        },
-        {
-          id: "2",
-          title: "This is private todo 2",
-          is_completed: false,
-          is_public: false
-        }
-      ],
-    }
+      todos: []
+    };
   },
   computed: {
     remainingTodos: function() {
-      const activeTodos = this.todos !== undefined ? this.todos.filter((todo) => todo.is_completed !== true) : []
-      return activeTodos.length
+      const activeTodos =
+        this.todos !== undefined
+          ? this.todos.filter(todo => todo.is_completed !== true)
+          : [];
+      return activeTodos.length;
     },
     filteredTodos: function() {
-      if (this.filterType === 'all') {
-        return this.todos
-      } else if(this.filterType === 'active') {
-        return this.todos.filter((todo) => todo.is_completed !== true);
-      } else if (this.filterType === 'completed') {
-        return this.todos.filter((todo) => todo.is_completed === true);
+      if (this.filterType === "all") {
+        return this.todos;
+      } else if (this.filterType === "active") {
+        return this.todos.filter(todo => todo.is_completed !== true);
+      } else if (this.filterType === "completed") {
+        return this.todos.filter(todo => todo.is_completed === true);
       }
     }
   },
   methods: {
     filterResults: function(type) {
-      if(type === 'active') {
+      if (type === "active") {
         this.filterType = "active";
-      } else if(type === 'completed') {
+      } else if (type === "completed") {
         this.filterType = "completed";
       } else {
         this.filterType = "all";
@@ -74,6 +88,6 @@ export default {
         // Remove all the todos that are completed
       }
     }
-  },
-}
+  }
+};
 </script>
